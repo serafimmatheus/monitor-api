@@ -99,10 +99,11 @@ model Patient {
   createdAt DateTime @default(now()) @db.Timestamptz()
   updatedAt DateTime @updatedAt @db.Timestamptz()
 
-  caregivers  PatientCaregiver[]
-  supplies    Supply[]
-  medications Medication[]
-  careEvents  CareEvent[]
+  caregivers       PatientCaregiver[]
+  caregiverInvites PatientCaregiverInvite[]
+  supplies         Supply[]
+  medications      Medication[]
+  careEvents       CareEvent[]
 
   @@map("patient")
 }
@@ -119,6 +120,21 @@ model PatientCaregiver {
   @@id([patientId, userId])
   @@index([userId])
   @@map("patient_caregiver")
+}
+
+/// Convite por e-mail antes da pessoa criar conta; ao cadastrar com o mesmo e-mail, o vínculo é criado automaticamente.
+model PatientCaregiverInvite {
+  id        String   @id @default(cuid())
+  patientId String
+  /// E-mail normalizado em minúsculas.
+  email     String
+  createdAt DateTime @default(now()) @db.Timestamptz()
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, email])
+  @@index([email])
+  @@map("patient_caregiver_invite")
 }
 
 model Supply {

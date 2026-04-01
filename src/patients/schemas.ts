@@ -64,11 +64,18 @@ export const AddCaregiverBodySchema = z.object({
   email: z.string().trim().email(),
 });
 
-export const AddCaregiverResponseSchema = z.object({
-  userId: z.string(),
-  email: z.string(),
-  name: z.string().nullable(),
-});
+export const AddCaregiverResponseSchema = z.discriminatedUnion("status", [
+  z.object({
+    status: z.literal("linked"),
+    userId: z.string(),
+    email: z.string(),
+    name: z.string().nullable(),
+  }),
+  z.object({
+    status: z.literal("pending_invite"),
+    email: z.string(),
+  }),
+]);
 
 export const SupplyDtoSchema = z.object({
   id: z.string().cuid(),

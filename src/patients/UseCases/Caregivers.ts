@@ -37,24 +37,41 @@ export class AddPatientCaregiver {
     const target = await this.prisma.user.findUnique({
       where: { email: normalized },
     });
-    if (!target) {
-      throw new ErrorNotFound("Nenhum usuário encontrado com este e-mail");
+    if (target) {
+      const existing = await this.prisma.patientCaregiver.findUnique({
+        where: {
+          patientId_userId: { patientId, userId: target.id },
+        },
+      });
+      if (existing) {
+        throw new ErrorConflict("Este usuário já é cuidador deste paciente");
+      }
+      await this.prisma.$transaction(async (tx) => {
+        await tx.patientCaregiver.create({
+          data: { patientId, userId: target.id },
+        });
+        await tx.patientCaregiverInvite.deleteMany({
+          where: { patientId, email: normalized },
+        });
+      });
+      return {
+        status: "linked" as const,
+        userId: target.id,
+        email: target.email,
+        name: target.name,
+      };
     }
-    const existing = await this.prisma.patientCaregiver.findUnique({
+
+    await this.prisma.patientCaregiverInvite.upsert({
       where: {
-        patientId_userId: { patientId, userId: target.id },
+        patientId_email: { patientId, email: normalized },
       },
-    });
-    if (existing) {
-      throw new ErrorConflict("Este usuário já é cuidador deste paciente");
-    }
-    await this.prisma.patientCaregiver.create({
-      data: { patientId, userId: target.id },
+      create: { patientId, email: normalized },
+      update: {},
     });
     return {
-      userId: target.id,
-      email: target.email,
-      name: target.name,
+      status: "pending_invite" as const,
+      email: normalized,
     };
   }
 }
