@@ -11,26 +11,37 @@ import {
   ZodTypeProvider,
 } from "fastify-type-provider-zod";
 
-import { homeRoutes } from "./home/Routes/home.js";
-import { GetHomeData } from "./home/UseCases/GetHomeData.js";
-import { iaRoutes } from "./IA/routes/ia.js";
+import { ListCareEvents } from "./care-events/UseCases/ListCareEvents.js";
 import { auth } from "./lib/auth.js";
 import { prisma } from "./lib/db.js";
-import { statsRoutes } from "./stats/routes/stats.js";
-import { GetStats } from "./stats/UseCases/GetStats.js";
-import { PrismaUserTrainDataRepository } from "./user-train-data/Repositories/PrismaUserTrainDataRepository.js";
-import { userTrainDataRoutes } from "./user-train-data/Routes/user-train-data.js";
-import { GetUserTrainData } from "./user-train-data/UseCases/GetUserTrainData.js";
-import { UpsertUserTrainData } from "./user-train-data/UseCases/UpsertUserTrainData.js";
-import { PrismaUserWorkoutSessionRepository } from "./workout-plan/Repositories/PrismaUserWorkoutSessionRepository.js";
-import { PrismaWorkoutPlanRepository } from "./workout-plan/Repositories/PrismaWorkoutPlanRepository.js";
-import { workoutPlanRoutes } from "./workout-plan/Routes/workout-plan.js";
-import { CreateWorkoutPlan } from "./workout-plan/UseCases/CreateWorkoutPlan.js";
-import { GetWorkoutDay } from "./workout-plan/UseCases/GetWorkoutDay.js";
-import { GetWorkoutPlan } from "./workout-plan/UseCases/GetWorkoutPlan.js";
-import { ListWorkoutPlans } from "./workout-plan/UseCases/ListWorkoutPlans.js";
-import { StartWorkoutSession } from "./workout-plan/UseCases/StartWorkoutSession.js";
-import { UpdateWorkoutSession } from "./workout-plan/UseCases/UpdateWorkoutSession.js";
+import {
+  ApplyMedication,
+  CreateMedication,
+  DeleteMedication,
+  ListMedications,
+  UpdateMedication,
+} from "./medications/UseCases/MedicationCrud.js";
+import { patientRoutes } from "./patients/Routes/patients.js";
+import {
+  AddPatientCaregiver,
+  ListPatientCaregivers,
+  RemovePatientCaregiver,
+} from "./patients/UseCases/Caregivers.js";
+import {
+  CreatePatient,
+  DeletePatient,
+  GetPatient,
+  ListPatients,
+  UpdatePatient,
+} from "./patients/UseCases/PatientCrud.js";
+import { suppliesRoutes } from "./supplies/Routes/supplies.js";
+import { ConsumeSupply } from "./supplies/UseCases/ConsumeSupply.js";
+import {
+  CreateSupply,
+  DeleteSupply,
+  ListSupplies,
+  UpdateSupply,
+} from "./supplies/UseCases/SupplyCrud.js";
 
 const app = Fastify({
   logger: true,
@@ -42,8 +53,8 @@ app.setSerializerCompiler(serializerCompiler);
 await app.register(fastifySwagger, {
   openapi: {
     info: {
-      title: "Bootcamp Treinos API",
-      description: "API para o bootcamp de treinos do FSC",
+      title: "Cuidar Juntos API",
+      description: "API de gestão de cuidados familiares (pacientes, insumos, medicamentos).",
       version: "1.0.0",
     },
     servers: [
@@ -70,8 +81,8 @@ await app.register(fastifyApiReference, {
   configuration: {
     sources: [
       {
-        title: "Bootcamp Treinos API",
-        slug: "bootcamp-treinos-api",
+        title: "Cuidar Juntos API",
+        slug: "cuidar-juntos-api",
         url: "/swagger.json",
       },
       {
@@ -83,63 +94,37 @@ await app.register(fastifyApiReference, {
   },
 });
 
-// DI container - Repositories & UseCases
-const workoutPlanRepository = new PrismaWorkoutPlanRepository(prisma);
-const userWorkoutSessionRepository = new PrismaUserWorkoutSessionRepository(
-  prisma,
-);
-const createWorkoutPlan = new CreateWorkoutPlan(workoutPlanRepository);
-const getWorkoutDay = new GetWorkoutDay(workoutPlanRepository);
-const getWorkoutPlan = new GetWorkoutPlan(workoutPlanRepository);
-const listWorkoutPlans = new ListWorkoutPlans(workoutPlanRepository);
-const startWorkoutSession = new StartWorkoutSession(
-  workoutPlanRepository,
-  userWorkoutSessionRepository,
-);
-const updateWorkoutSession = new UpdateWorkoutSession(
-  workoutPlanRepository,
-  userWorkoutSessionRepository,
-);
-const getHomeData = new GetHomeData(
-  workoutPlanRepository,
-  userWorkoutSessionRepository,
-);
-const getStats = new GetStats(
-  workoutPlanRepository,
-  userWorkoutSessionRepository,
-);
-const userTrainDataRepository = new PrismaUserTrainDataRepository(prisma);
-const getUserTrainData = new GetUserTrainData(userTrainDataRepository);
-const upsertUserTrainData = new UpsertUserTrainData(userTrainDataRepository);
+const care = {
+  listPatients: new ListPatients(prisma),
+  createPatient: new CreatePatient(prisma),
+  getPatient: new GetPatient(prisma),
+  updatePatient: new UpdatePatient(prisma),
+  deletePatient: new DeletePatient(prisma),
+  listPatientCaregivers: new ListPatientCaregivers(prisma),
+  addPatientCaregiver: new AddPatientCaregiver(prisma),
+  removePatientCaregiver: new RemovePatientCaregiver(prisma),
+  listSupplies: new ListSupplies(prisma),
+  createSupply: new CreateSupply(prisma),
+  updateSupply: new UpdateSupply(prisma),
+  deleteSupply: new DeleteSupply(prisma),
+  listMedications: new ListMedications(prisma),
+  createMedication: new CreateMedication(prisma),
+  updateMedication: new UpdateMedication(prisma),
+  deleteMedication: new DeleteMedication(prisma),
+  applyMedication: new ApplyMedication(prisma),
+  listCareEvents: new ListCareEvents(prisma),
+};
 
-// Routes
-await app.register(homeRoutes, {
-  prefix: "/home",
-  getHomeData,
+const consumeSupply = new ConsumeSupply(prisma);
+
+await app.register(patientRoutes, {
+  prefix: "/patients",
+  care,
 });
-await app.register(workoutPlanRoutes, {
-  prefix: "/workout-plans",
-  createWorkoutPlan,
-  getWorkoutDay,
-  getWorkoutPlan,
-  listWorkoutPlans,
-  startWorkoutSession,
-  updateWorkoutSession,
-});
-await app.register(statsRoutes, {
-  prefix: "/stats",
-  getStats,
-});
-await app.register(userTrainDataRoutes, {
-  prefix: "",
-  getUserTrainData,
-});
-await app.register(iaRoutes, {
-  prefix: "/ia",
-  getUserTrainData,
-  upsertUserTrainData,
-  listWorkoutPlans,
-  createWorkoutPlan,
+
+await app.register(suppliesRoutes, {
+  prefix: "/supplies",
+  consumeSupply,
 });
 
 app.withTypeProvider<ZodTypeProvider>().route({
