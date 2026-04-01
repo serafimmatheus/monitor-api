@@ -1,12 +1,12 @@
 services:
   postgres:
     image: postgres:17-alpine
-    container_name: fsc-treino-postgres
+    container_name: cuidar-juntos-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: fsc_treino
+      POSTGRES_DB: cuidar_juntos
     ports:
       - "5432:5432"
     volumes:
