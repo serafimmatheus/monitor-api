@@ -29,6 +29,10 @@ const ListActivityLogQuerySchema = z.object({
   patientId: z.string().optional(),
   page: z.coerce.number().int().min(1).optional(),
   pageSize: z.coerce.number().int().min(1).max(50).optional(),
+  /** ISO 8601 — início do intervalo (inclusivo) em `createdAt`. */
+  from: z.string().optional(),
+  /** ISO 8601 — fim do intervalo (inclusivo) em `createdAt`. */
+  to: z.string().optional(),
 });
 
 const err = {
@@ -66,6 +70,8 @@ export const activityLogRoutes: FastifyPluginAsync<Options> = async (
           patientId: q.patientId,
           page: q.page,
           pageSize: q.pageSize,
+          from: q.from,
+          to: q.to,
         });
         return reply.status(200).send(result);
       } catch (error) {

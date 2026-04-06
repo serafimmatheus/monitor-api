@@ -1,3 +1,4 @@
+import { ErrorBadRequest } from "../../errors/ErrorBadRequest.js";
 import { ErrorForbidden } from "../../errors/ErrorForbidden.js";
 import type { PrismaClient } from "../../generated/prisma/client.js";
 import { formatUserLabel } from "../../lib/createActivityLog.js";
@@ -7,7 +8,15 @@ export class ListActivityLog {
 
   async execute(
     userId: string,
-    options: { patientId?: string; page?: number; pageSize?: number },
+    options: {
+      patientId?: string;
+      page?: number;
+      pageSize?: number;
+      /** ISO 8601 */
+      from?: string;
+      /** ISO 8601 */
+      to?: string;
+    },
   ) {
     const page = Math.max(1, options.page ?? 1);
     const pageSize = Math.min(50, Math.max(1, options.pageSize ?? 20));
@@ -42,10 +51,40 @@ export class ListActivityLog {
       };
     }
 
-    const where =
+    const baseWhere =
       options.patientId !== undefined
         ? { patientId: options.patientId }
         : { patientId: { in: [...allowed] } };
+
+    let fromDate: Date | undefined;
+    let toDate: Date | undefined;
+    if (options.from !== undefined && options.from.trim() !== "") {
+      const d = new Date(options.from);
+      if (Number.isNaN(d.getTime())) {
+        throw new ErrorBadRequest("Parâmetro «from» não é uma data válida (ISO 8601).");
+      }
+      fromDate = d;
+    }
+    if (options.to !== undefined && options.to.trim() !== "") {
+      const d = new Date(options.to);
+      if (Number.isNaN(d.getTime())) {
+        throw new ErrorBadRequest("Parâmetro «to» não é uma data válida (ISO 8601).");
+      }
+      toDate = d;
+    }
+    if (fromDate && toDate && fromDate.getTime() > toDate.getTime()) {
+      throw new ErrorBadRequest(
+        "O início do intervalo («from») não pode ser depois do fim («to»).",
+      );
+    }
+
+    const createdAt: { gte?: Date; lte?: Date } = {};
+    if (fromDate) createdAt.gte = fromDate;
+    if (toDate) createdAt.lte = toDate;
+    const where =
+      Object.keys(createdAt).length > 0
+        ? { ...baseWhere, createdAt }
+        : baseWhere;
 
     const [total, rows] = await Promise.all([
       this.prisma.activityLog.count({ where }),

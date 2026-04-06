@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { openAPI } from "better-auth/plugins";
+import { bearer, openAPI } from "better-auth/plugins";
 
 import { prisma } from "./db.js";
 import { trustedFrontendOrigins } from "./trustedOrigins.js";
@@ -20,5 +20,11 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
-  plugins: [openAPI()],
+  user: {
+    deleteUser: {
+      enabled: true,
+    },
+  },
+  /** Bearer: app React Native envia `Authorization` sem cookies. */
+  plugins: [bearer(), openAPI()],
 });

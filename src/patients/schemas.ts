@@ -169,6 +169,12 @@ export const ApplyMedicationResponseSchema = z.object({
   occurredAt: z.string().datetime(),
 });
 
+export const CareEventPerformedBySchema = z.object({
+  id: z.string(),
+  name: z.string().nullable(),
+  email: z.string(),
+});
+
 export const CareEventDtoSchema = z.object({
   id: z.string().cuid(),
   patientId: z.string().cuid(),
@@ -178,6 +184,7 @@ export const CareEventDtoSchema = z.object({
   supplyId: z.string().cuid().nullable(),
   medicationId: z.string().cuid().nullable(),
   performedByUserId: z.string(),
+  performedBy: CareEventPerformedBySchema,
   occurredAt: z.string().datetime(),
   createdAt: z.string().datetime(),
 });

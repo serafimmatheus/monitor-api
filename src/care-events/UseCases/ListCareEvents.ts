@@ -23,6 +23,9 @@ export class ListCareEvents {
       where,
       orderBy: { occurredAt: "desc" },
       take,
+      include: {
+        performedBy: { select: { id: true, name: true, email: true } },
+      },
     });
     return {
       careEvents: events.map((e) => ({
@@ -34,6 +37,11 @@ export class ListCareEvents {
         supplyId: e.supplyId,
         medicationId: e.medicationId,
         performedByUserId: e.performedByUserId,
+        performedBy: {
+          id: e.performedBy.id,
+          name: e.performedBy.name,
+          email: e.performedBy.email,
+        },
         occurredAt: e.occurredAt.toISOString(),
         createdAt: e.createdAt.toISOString(),
       })),
