@@ -36,7 +36,7 @@ app.setSerializerCompiler(serializerCompiler);
 await app.register(fastifySwagger, {
   openapi: {
     info: {
-      title: "Meu Organizador de Tasks API",
+      title: "OmniTasks API",
       description:
         "API para organizar tarefas por dia de trabalho, com branches associadas.",
       version: "1.0.0",
