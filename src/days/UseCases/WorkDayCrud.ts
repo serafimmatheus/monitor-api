@@ -31,7 +31,11 @@ export function toWorkDayWithTasks(
     ...toWorkDayDto(day),
     tasks: day.tasks
       .slice()
-      .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.getTime() - b.createdAt.getTime())
+      .sort(
+        (a, b) =>
+          b.createdAt.getTime() - a.createdAt.getTime() ||
+          b.sortOrder - a.sortOrder,
+      )
       .map(toTaskDto),
   };
 }
