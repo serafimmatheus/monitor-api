@@ -17,6 +17,7 @@ import {
   CreateClient,
   DeleteClient,
   GetClient,
+  GetClientsSummary,
   ListClients,
   UpdateClient,
 } from "./clients/UseCases/ClientCrud.js";
@@ -116,6 +117,7 @@ const planService = new PlanService(prisma);
 
 const clientDeps = {
   listClients: new ListClients(prisma),
+  getClientsSummary: new GetClientsSummary(prisma),
   getClient: new GetClient(prisma),
   createClient: new CreateClient(prisma),
   updateClient: new UpdateClient(prisma),

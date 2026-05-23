@@ -12,7 +12,32 @@ export const ClientDtoSchema = z.object({
   updatedAt: z.string(),
 });
 
-export const ListClientsResponseSchema = z.array(ClientDtoSchema);
+export const ListClientsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(10),
+  search: z.string().trim().optional(),
+});
+
+export const PaginationSchema = z.object({
+  page: z.number(),
+  pageSize: z.number(),
+  total: z.number(),
+  totalPages: z.number(),
+});
+
+export const ListClientsResponseSchema = z.object({
+  data: z.array(ClientDtoSchema),
+  pagination: PaginationSchema,
+});
+
+export const ClientsSummaryResponseSchema = z.object({
+  ativos: z.number(),
+  pendentes: z.number(),
+  inaptos: z.number(),
+  totalCnpj: z.number(),
+  pendingCnpj: z.number(),
+  hasPendingSync: z.boolean(),
+});
 
 export const ClientIdParamsSchema = z.object({
   clientId: z.string(),

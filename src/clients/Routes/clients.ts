@@ -7,8 +7,10 @@ import { ErrorSchema } from "../../schemas/ErrorSchema.js";
 import {
   ClientIdParamsSchema,
   ClientResponseSchema,
+  ClientsSummaryResponseSchema,
   CreateClientBodySchema,
   ImportClientsResponseSchema,
+  ListClientsQuerySchema,
   ListClientsResponseSchema,
   OkResponseSchema,
   UpdateClientBodySchema,
@@ -17,6 +19,7 @@ import type {
   CreateClient,
   DeleteClient,
   GetClient,
+  GetClientsSummary,
   ListClients,
   UpdateClient,
 } from "../UseCases/ClientCrud.js";
@@ -41,6 +44,7 @@ function isPrismaUniqueError(error: unknown) {
 
 export type ClientRouteDeps = {
   listClients: ListClients;
+  getClientsSummary: GetClientsSummary;
   getClient: GetClient;
   createClient: CreateClient;
   updateClient: UpdateClient;
@@ -60,12 +64,31 @@ export const clientRoutes: FastifyPluginAsync<ClientRouteDeps> = async (
     schema: {
       operationId: "listClients",
       tags: ["Clientes"],
+      querystring: ListClientsQuerySchema,
       response: { 200: ListClientsResponseSchema, ...err },
+    },
+    handler: async (request, reply) => {
+      try {
+        const result = await deps.listClients.execute(request.query);
+        return reply.send(result);
+      } catch (error) {
+        return sendDomainRouteError(app.log, reply, error);
+      }
+    },
+  });
+
+  app.withTypeProvider<ZodTypeProvider>().route({
+    method: "GET",
+    url: "/summary",
+    schema: {
+      operationId: "getClientsSummary",
+      tags: ["Clientes"],
+      response: { 200: ClientsSummaryResponseSchema, ...err },
     },
     handler: async (_request, reply) => {
       try {
-        const clients = await deps.listClients.execute();
-        return reply.send(clients);
+        const summary = await deps.getClientsSummary.execute();
+        return reply.send(summary);
       } catch (error) {
         return sendDomainRouteError(app.log, reply, error);
       }

@@ -1,5 +1,9 @@
-import type { Client, PrismaClient } from "../../generated/prisma/client.js";
-import { parseDocument } from "../lib/document.js";
+import type {
+  Client,
+  Prisma,
+  PrismaClient,
+} from "../../generated/prisma/client.js";
+import { normalizeDocument, parseDocument } from "../lib/document.js";
 import type { ClientDto } from "../schemas.js";
 
 export function toClientDto(client: Client): ClientDto {
@@ -14,15 +18,85 @@ export function toClientDto(client: Client): ClientDto {
   };
 }
 
+function buildClientsWhere(search?: string): Prisma.ClientWhereInput | undefined {
+  const term = search?.trim();
+  if (!term) return undefined;
+
+  const documentTerm = normalizeDocument(term);
+  const filters: Prisma.ClientWhereInput[] = [
+    { name: { contains: term, mode: "insensitive" } },
+  ];
+
+  if (documentTerm.length > 0) {
+    filters.push({ document: { contains: documentTerm } });
+  }
+
+  return { OR: filters };
+}
+
 export class ListClients {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async execute(): Promise<ClientDto[]> {
-    const clients = await this.prisma.client.findMany({
-      orderBy: { name: "asc" },
+  async execute(input: { page: number; pageSize: number; search?: string }) {
+    const where = buildClientsWhere(input.search);
+    const skip = (input.page - 1) * input.pageSize;
+
+    const [clients, total] = await Promise.all([
+      this.prisma.client.findMany({
+        where,
+        orderBy: { name: "asc" },
+        skip,
+        take: input.pageSize,
+      }),
+      this.prisma.client.count({ where }),
+    ]);
+
+    const totalPages = Math.max(1, Math.ceil(total / input.pageSize));
+
+    return {
+      data: clients.map(toClientDto),
+      pagination: {
+        page: input.page,
+        pageSize: input.pageSize,
+        total,
+        totalPages,
+      },
+    };
+  }
+}
+
+export class GetClientsSummary {
+  constructor(private readonly prisma: PrismaClient) {}
+
+  async execute() {
+    const counts = await this.prisma.client.groupBy({
+      by: ["status"],
+      where: { documentType: "CNPJ" },
+      _count: { _all: true },
     });
 
-    return clients.map(toClientDto);
+    const statusCounts = Object.fromEntries(
+      counts.map((entry) => [entry.status, entry._count._all]),
+    );
+
+    const ativos = statusCounts.ATIVA ?? 0;
+    const pendentes =
+      (statusCounts.PENDENTE ?? 0) + (statusCounts.ERRO ?? 0);
+    const inaptos =
+      (statusCounts.INAPTA ?? 0) +
+      (statusCounts.BAIXADA ?? 0) +
+      (statusCounts.SUSPENSA ?? 0);
+    const totalCnpj = counts.reduce((sum, entry) => sum + entry._count._all, 0);
+    const pendingCnpj = statusCounts.PENDENTE ?? 0;
+
+    return {
+      ativos,
+      pendentes,
+      inaptos,
+      totalCnpj,
+      pendingCnpj,
+      hasPendingSync: pendingCnpj > 0,
+    };
   }
 }
 
