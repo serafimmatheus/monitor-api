@@ -18,7 +18,7 @@ export function toClientDto(client: Client): ClientDto {
   };
 }
 
-function buildClientsWhere(search?: string): Prisma.ClientWhereInput | undefined {
+function buildSearchWhere(search?: string): Prisma.ClientWhereInput | undefined {
   const term = search?.trim();
   if (!term) return undefined;
 
@@ -34,11 +34,36 @@ function buildClientsWhere(search?: string): Prisma.ClientWhereInput | undefined
   return { OR: filters };
 }
 
+function buildClientsWhere(input: {
+  search?: string;
+  status?: string[];
+}): Prisma.ClientWhereInput | undefined {
+  const filters: Prisma.ClientWhereInput[] = [];
+
+  const searchWhere = buildSearchWhere(input.search);
+  if (searchWhere) {
+    filters.push(searchWhere);
+  }
+
+  if (input.status && input.status.length > 0) {
+    filters.push({ status: { in: input.status } });
+  }
+
+  if (filters.length === 0) return undefined;
+  if (filters.length === 1) return filters[0];
+  return { AND: filters };
+}
+
 export class ListClients {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async execute(input: { page: number; pageSize: number; search?: string }) {
-    const where = buildClientsWhere(input.search);
+  async execute(input: {
+    page: number;
+    pageSize: number;
+    search?: string;
+    status?: string[];
+  }) {
+    const where = buildClientsWhere(input);
     const skip = (input.page - 1) * input.pageSize;
 
     const [clients, total] = await Promise.all([
