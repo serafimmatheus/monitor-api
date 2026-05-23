@@ -124,3 +124,14 @@ model Task {
   @@index([userId])
   @@map("task")
 }
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  cnpj      String   @unique
+  status    String   @default("PENDENTE")
+  updatedAt DateTime @updatedAt @db.Timestamptz()
+
+  @@index([name])
+  @@map("client")
+}

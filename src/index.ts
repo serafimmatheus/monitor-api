@@ -11,20 +11,13 @@ import {
   ZodTypeProvider,
 } from "fastify-type-provider-zod";
 
-import { dayRoutes } from "./days/Routes/days.js";
-import {
-  CreateTask,
-  CreateWorkDay,
-  DeleteTask,
-  DeleteWorkDay,
-  GetWorkDay,
-  ListWorkDays,
-  UpdateTask,
-  UpdateWorkDay,
-} from "./days/UseCases/WorkDayCrud.js";
+import { clientRoutes } from "./clients/Routes/clients.js";
+import { ListClients } from "./clients/UseCases/ClientCrud.js";
+import { EnqueueSync } from "./clients/UseCases/EnqueueSync.js";
 import { auth } from "./lib/auth.js";
 import { prisma } from "./lib/db.js";
 import { trustedFrontendOrigins } from "./lib/trustedOrigins.js";
+import { syncRoutes } from "./sync/Routes/sync.js";
 
 const app = Fastify({
   logger: true,
@@ -36,9 +29,9 @@ app.setSerializerCompiler(serializerCompiler);
 await app.register(fastifySwagger, {
   openapi: {
     info: {
-      title: "OmniTasks API",
+      title: "Monitor CNPJ API",
       description:
-        "API para organizar tarefas por dia de trabalho, com branches associadas.",
+        "API para monitoramento de situacao cadastral de CNPJs via BrasilAPI.",
       version: "1.0.0",
     },
     servers: [
@@ -84,6 +77,7 @@ await app.register(fastifyCors, {
   },
   credentials: true,
   methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  exposedHeaders: ["set-auth-token"],
 });
 
 await app.register(fastifyApiReference, {
@@ -91,8 +85,8 @@ await app.register(fastifyApiReference, {
   configuration: {
     sources: [
       {
-        title: "MOT API",
-        slug: "mot-api",
+        title: "Monitor CNPJ API",
+        slug: "monitor-cnpj-api",
         url: "/swagger.json",
       },
       {
@@ -104,20 +98,32 @@ await app.register(fastifyApiReference, {
   },
 });
 
-const dayDeps = {
-  listWorkDays: new ListWorkDays(prisma),
-  createWorkDay: new CreateWorkDay(prisma),
-  getWorkDay: new GetWorkDay(prisma),
-  updateWorkDay: new UpdateWorkDay(prisma),
-  deleteWorkDay: new DeleteWorkDay(prisma),
-  createTask: new CreateTask(prisma),
-  updateTask: new UpdateTask(prisma),
-  deleteTask: new DeleteTask(prisma),
+const clientDeps = {
+  listClients: new ListClients(prisma),
 };
 
-await app.register(dayRoutes, {
-  prefix: "/days",
-  ...dayDeps,
+const syncDeps = {
+  enqueueSync: new EnqueueSync(prisma),
+};
+
+await app.register(clientRoutes, {
+  prefix: "/clients",
+  ...clientDeps,
+});
+
+await app.register(syncRoutes, {
+  prefix: "/sync",
+  ...syncDeps,
+});
+
+app.withTypeProvider<ZodTypeProvider>().route({
+  method: "GET",
+  url: "/health",
+  schema: {
+    operationId: "healthCheck",
+    hide: true,
+  },
+  handler: async () => ({ status: "ok" }),
 });
 
 app.withTypeProvider<ZodTypeProvider>().route({
