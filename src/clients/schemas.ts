@@ -33,6 +33,7 @@ export const ListClientsResponseSchema = z.object({
 export const ClientsSummaryResponseSchema = z.object({
   ativos: z.number(),
   pendentes: z.number(),
+  baixadas: z.number(),
   inaptos: z.number(),
   totalCnpj: z.number(),
   pendingCnpj: z.number(),
