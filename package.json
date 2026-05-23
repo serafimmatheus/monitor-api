@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev:server": "tsx --watch src/index.ts",
+    "dev": "pnpm run --parallel dev:server worker",
     "start": "tsx src/index.ts",
     "worker": "tsx src/queue/worker.ts",
     "db:generate": "prisma generate",

@@ -21,6 +21,15 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function isRecordNotFoundError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "P2025"
+  );
+}
+
 function mapBrasilApiStatus(description: string | undefined) {
   if (!description) return "ERRO";
 
@@ -29,9 +38,12 @@ function mapBrasilApiStatus(description: string | undefined) {
 }
 
 async function fetchCnpjStatus(cnpj: string) {
-  const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+  const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`, {
+    headers: { "User-Agent": "monitor-cnpj/1.0" },
+  });
 
   if (!response.ok) {
+    console.error(`BrasilAPI retornou ${response.status} para CNPJ ${cnpj}`);
     return "ERRO";
   }
 
@@ -62,15 +74,23 @@ async function processMessage(message: {
       data: { status },
     });
   } catch (error) {
-    console.error("Erro ao processar mensagem:", error);
-
-    if (receiveCount >= MAX_ATTEMPTS) {
-      await prisma.client.update({
-        where: { id: payload.clientId },
-        data: { status: "ERRO" },
-      });
+    if (isRecordNotFoundError(error)) {
+      console.warn(
+        `Cliente ${payload.clientId} nao encontrado. Descartando mensagem.`,
+      );
     } else {
-      throw error;
+      console.error("Erro ao processar mensagem:", error);
+
+      if (receiveCount >= MAX_ATTEMPTS) {
+        await prisma.client
+          .update({
+            where: { id: payload.clientId },
+            data: { status: "ERRO" },
+          })
+          .catch(() => undefined);
+      } else {
+        throw error;
+      }
     }
   }
 
