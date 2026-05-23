@@ -37,9 +37,12 @@ function mapBrasilApiStatus(description: string | undefined) {
   return STATUS_MAP[normalized] ?? "ERRO";
 }
 
+const FETCH_TIMEOUT_MS = Number(process.env.FETCH_TIMEOUT_MS || 15000);
+
 async function fetchCnpjStatus(cnpj: string) {
   const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`, {
     headers: { "User-Agent": "monitor-cnpj/1.0" },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (!response.ok) {

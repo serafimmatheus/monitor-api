@@ -1,6 +1,7 @@
-import { PurgeQueueCommand, SendMessageBatchCommand } from "@aws-sdk/client-sqs";
+import { SendMessageBatchCommand } from "@aws-sdk/client-sqs";
 
 import type { PrismaClient } from "../../generated/prisma/client.js";
+import { drainQueue } from "../../lib/drainQueue.js";
 import { queueUrl, sqsClient } from "../../lib/sqs.js";
 
 function chunkArray<T>(items: T[], size: number): T[][] {
@@ -35,7 +36,7 @@ export class EnqueueSync {
       data: { status: "PENDENTE" },
     });
 
-    await sqsClient.send(new PurgeQueueCommand({ QueueUrl: queueUrl }));
+    await drainQueue();
 
     const batches = chunkArray(clients, 10);
 
