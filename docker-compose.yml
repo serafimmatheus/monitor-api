@@ -1,7 +1,9 @@
+name: monitor-cnpj
+
 services:
   postgres:
     image: postgres:17-alpine
-    container_name: monitor-api-postgres
+    container_name: monitor-cnpj-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -20,7 +22,7 @@ services:
 
   localstack:
     image: localstack/localstack:4.4.0
-    container_name: monitor-api-localstack
+    container_name: monitor-cnpj-localstack
     restart: unless-stopped
     ports:
       - "4566:4566"
@@ -39,7 +41,7 @@ services:
 
   sqs-admin:
     image: pacovk/sqs-admin:0.9.1
-    container_name: monitor-api-sqs-admin
+    container_name: monitor-cnpj-sqs-admin
     restart: unless-stopped
     ports:
       - "3999:3999"
@@ -52,7 +54,7 @@ services:
 
   monitor-api:
     build: .
-    container_name: monitor-api
+    container_name: monitor-cnpj-api
     restart: unless-stopped
     ports:
       - "5555:5555"
@@ -84,7 +86,7 @@ services:
 
   worker:
     build: .
-    container_name: monitor-api-worker
+    container_name: monitor-cnpj-worker
     restart: unless-stopped
     command: ["pnpm", "worker"]
     env_file:
@@ -99,6 +101,21 @@ services:
         condition: service_healthy
       localstack:
         condition: service_healthy
+      monitor-api:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ../monitor-front
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5555}
+    container_name: monitor-cnpj-front
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - ../monitor-front/.env
+    depends_on:
       monitor-api:
         condition: service_healthy
 
