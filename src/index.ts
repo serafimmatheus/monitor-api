@@ -25,6 +25,8 @@ import { EnqueueSync } from "./clients/UseCases/EnqueueSync.js";
 import { auth } from "./lib/auth.js";
 import { prisma } from "./lib/db.js";
 import { trustedFrontendOrigins } from "./lib/trustedOrigins.js";
+import { planRoutes } from "./plans/Routes/plan.js";
+import { PlanService } from "./plans/UseCases/PlanService.js";
 import { syncRoutes } from "./sync/Routes/sync.js";
 
 const app = Fastify({
@@ -110,17 +112,26 @@ await app.register(fastifyApiReference, {
   },
 });
 
+const planService = new PlanService(prisma);
+
 const clientDeps = {
   listClients: new ListClients(prisma),
   getClient: new GetClient(prisma),
   createClient: new CreateClient(prisma),
   updateClient: new UpdateClient(prisma),
   deleteClient: new DeleteClient(prisma),
-  importClientsFromSpreadsheet: new ImportClientsFromSpreadsheet(prisma),
+  importClientsFromSpreadsheet: new ImportClientsFromSpreadsheet(
+    prisma,
+    planService,
+  ),
 };
 
 const syncDeps = {
-  enqueueSync: new EnqueueSync(prisma),
+  enqueueSync: new EnqueueSync(prisma, planService),
+};
+
+const planDeps = {
+  planService,
 };
 
 await app.register(clientRoutes, {
@@ -131,6 +142,11 @@ await app.register(clientRoutes, {
 await app.register(syncRoutes, {
   prefix: "/sync",
   ...syncDeps,
+});
+
+await app.register(planRoutes, {
+  prefix: "/me/plan",
+  ...planDeps,
 });
 
 app.withTypeProvider<ZodTypeProvider>().route({

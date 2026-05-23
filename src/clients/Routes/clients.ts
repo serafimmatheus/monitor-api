@@ -25,6 +25,7 @@ import type { ImportClientsFromSpreadsheet } from "../UseCases/ImportClients.js"
 const err = {
   400: ErrorSchema,
   401: ErrorSchema,
+  403: ErrorSchema,
   404: ErrorSchema,
   409: ErrorSchema,
   500: ErrorSchema,
@@ -123,7 +124,10 @@ export const clientRoutes: FastifyPluginAsync<ClientRouteDeps> = async (
         }
 
         const buffer = await file.toBuffer();
-        const result = await deps.importClientsFromSpreadsheet.execute(buffer);
+        const result = await deps.importClientsFromSpreadsheet.execute(
+          request.sessionUser!.id,
+          buffer,
+        );
         return reply.send(result);
       } catch (error) {
         if (error instanceof Error && error.message.includes("Planilha")) {

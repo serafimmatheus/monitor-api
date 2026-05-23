@@ -7,6 +7,12 @@ datasource db {
   provider = "postgresql"
 }
 
+enum PlanTier {
+  FREE
+  STARTER
+  PRO
+}
+
 model User {
   id            String   @id
   name          String?
@@ -16,10 +22,38 @@ model User {
   createdAt     DateTime @default(now()) @db.Timestamptz()
   updatedAt     DateTime @updatedAt @db.Timestamptz()
 
-  accounts Account[]
-  sessions Session[]
+  accounts     Account[]
+  sessions     Session[]
+  subscription Subscription?
+  syncUsages   SyncUsage[]
 
   @@map("user")
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  plan      PlanTier @default(FREE)
+  createdAt DateTime @default(now()) @db.Timestamptz()
+  updatedAt DateTime @updatedAt @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscription")
+}
+
+model SyncUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  yearMonth String
+  count     Int      @default(0)
+  createdAt DateTime @default(now()) @db.Timestamptz()
+  updatedAt DateTime @updatedAt @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, yearMonth])
+  @@map("sync_usage")
 }
 
 model Account {

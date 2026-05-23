@@ -2,6 +2,7 @@ import * as XLSX from "xlsx";
 
 import type { PrismaClient } from "../../generated/prisma/client.js";
 import { parseDocument } from "../lib/document.js";
+import type { PlanService } from "../../plans/UseCases/PlanService.js";
 
 type ImportRow = {
   row: number;
@@ -92,9 +93,14 @@ function parseSpreadsheet(buffer: Buffer): ImportRow[] {
 }
 
 export class ImportClientsFromSpreadsheet {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(
+    private readonly prisma: PrismaClient,
+    private readonly planService: PlanService,
+  ) {}
 
-  async execute(buffer: Buffer): Promise<ImportResult> {
+  async execute(userId: string, buffer: Buffer): Promise<ImportResult> {
+    await this.planService.assertCanImport(userId);
+
     const rows = parseSpreadsheet(buffer);
     const errors: ImportResult["errors"] = [];
     const validRows: {

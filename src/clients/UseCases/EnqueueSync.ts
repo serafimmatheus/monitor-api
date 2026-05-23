@@ -1,8 +1,10 @@
 import { SendMessageBatchCommand } from "@aws-sdk/client-sqs";
 
 import type { PrismaClient } from "../../generated/prisma/client.js";
+import { ErrorForbidden } from "../../errors/ErrorForbidden.js";
 import { drainQueue } from "../../lib/drainQueue.js";
 import { queueUrl, sqsClient } from "../../lib/sqs.js";
+import type { PlanService } from "../../plans/UseCases/PlanService.js";
 
 function chunkArray<T>(items: T[], size: number): T[][] {
   const chunks: T[][] = [];
@@ -15,12 +17,27 @@ function chunkArray<T>(items: T[], size: number): T[][] {
 }
 
 export class EnqueueSync {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(
+    private readonly prisma: PrismaClient,
+    private readonly planService: PlanService,
+  ) {}
 
-  async execute(): Promise<{ queued: number }> {
+  async execute(userId: string): Promise<{ queued: number }> {
     if (!queueUrl) {
       throw new Error("SQS_QUEUE_URL nao configurada");
     }
+
+    const pendingCount = await this.prisma.client.count({
+      where: { documentType: "CNPJ", status: "PENDENTE" },
+    });
+
+    if (pendingCount > 0) {
+      throw new ErrorForbidden(
+        "Ja existe uma sincronizacao em andamento. Aguarde a conclusao.",
+      );
+    }
+
+    await this.planService.assertCanSync(userId);
 
     const clients = await this.prisma.client.findMany({
       where: { documentType: "CNPJ" },
@@ -54,6 +71,8 @@ export class EnqueueSync {
         }),
       );
     }
+
+    await this.planService.recordSync(userId);
 
     return { queued: clients.length };
   }

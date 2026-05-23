@@ -4,43 +4,38 @@ import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { requireSessionUser } from "../../lib/requireSessionUser.js";
 import { sendDomainRouteError } from "../../lib/sendDomainRouteError.js";
 import { ErrorSchema } from "../../schemas/ErrorSchema.js";
-import { SyncResponseSchema } from "../../clients/schemas.js";
-import type { EnqueueSync } from "../../clients/UseCases/EnqueueSync.js";
+import { UserPlanInfoSchema } from "../schemas.js";
+import type { PlanService } from "../UseCases/PlanService.js";
 
 const err = {
-  400: ErrorSchema,
   401: ErrorSchema,
-  403: ErrorSchema,
-  404: ErrorSchema,
-  409: ErrorSchema,
   500: ErrorSchema,
 } as const;
 
-export type SyncRouteDeps = {
-  enqueueSync: EnqueueSync;
+export type PlanRouteDeps = {
+  planService: PlanService;
 };
 
-export const syncRoutes: FastifyPluginAsync<SyncRouteDeps> = async (
+export const planRoutes: FastifyPluginAsync<PlanRouteDeps> = async (
   app,
   deps,
 ) => {
   app.addHook("preHandler", requireSessionUser);
 
   app.withTypeProvider<ZodTypeProvider>().route({
-    method: "POST",
+    method: "GET",
     url: "/",
     schema: {
-      operationId: "syncClients",
-      tags: ["Sincronizacao"],
-      response: { 200: SyncResponseSchema, ...err },
+      operationId: "getMyPlan",
+      tags: ["Plano"],
+      response: { 200: UserPlanInfoSchema, ...err },
     },
     handler: async (request, reply) => {
       try {
-        const result = await deps.enqueueSync.execute(request.sessionUser!.id);
-        return reply.send({
-          queued: result.queued,
-          message: "Sincronizacao iniciada",
-        });
+        const planInfo = await deps.planService.getUserPlanInfo(
+          request.sessionUser!.id,
+        );
+        return reply.send(planInfo);
       } catch (error) {
         return sendDomainRouteError(app.log, reply, error);
       }
