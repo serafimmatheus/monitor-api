@@ -14,7 +14,10 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:clear-clients": "tsx scripts/clear-clients.ts",
-    "db:up": "docker compose up -d"
+    "queue:clear": "tsx scripts/clear-queue.ts",
+    "db:up": "docker compose up -d postgres localstack sqs-admin",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
