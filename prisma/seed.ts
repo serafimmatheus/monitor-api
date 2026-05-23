@@ -62,7 +62,9 @@ async function seedClients() {
 
   const clients = Array.from({ length: 500 }, (_, index) => ({
     name: `${COMPANY_NAMES[index % COMPANY_NAMES.length]} ${index + 1}`,
-    cnpj: generateValidCnpj(index + 1),
+    email: `cliente${index + 1}@example.com`,
+    document: generateValidCnpj(index + 1),
+    documentType: "CNPJ" as const,
     status: "PENDENTE",
   }));
 

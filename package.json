@@ -27,6 +27,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "24",
+    "@types/xlsx": "^0.0.36",
     "eslint": "9.39.2",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-simple-import-sort": "12.1.1",
@@ -37,10 +38,11 @@
     "typescript-eslint": "^8.57.1"
   },
   "dependencies": {
-    "@aws-sdk/client-sqs": "^3.787.0",
     "@ai-sdk/google": "^3.0.53",
     "@ai-sdk/openai": "3.0.33",
+    "@aws-sdk/client-sqs": "^3.787.0",
     "@fastify/cors": "11.2.0",
+    "@fastify/multipart": "^10.0.0",
     "@fastify/swagger": "9.7.0",
     "@prisma/adapter-pg": "7.4.0",
     "@prisma/client": "7.4.0",
@@ -52,6 +54,7 @@
     "fastify": "5.7.4",
     "fastify-type-provider-zod": "6.1.0",
     "tsx": "4.21.0",
+    "xlsx": "^0.18.5",
     "zod": "4.3.6"
   }
 }

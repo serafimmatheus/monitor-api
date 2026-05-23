@@ -1,6 +1,7 @@
 import "dotenv/config";
 
 import fastifyCors from "@fastify/cors";
+import fastifyMultipart from "@fastify/multipart";
 import fastifySwagger from "@fastify/swagger";
 import fastifyApiReference from "@scalar/fastify-api-reference";
 import Fastify from "fastify";
@@ -12,7 +13,14 @@ import {
 } from "fastify-type-provider-zod";
 
 import { clientRoutes } from "./clients/Routes/clients.js";
-import { ListClients } from "./clients/UseCases/ClientCrud.js";
+import {
+  CreateClient,
+  DeleteClient,
+  GetClient,
+  ListClients,
+  UpdateClient,
+} from "./clients/UseCases/ClientCrud.js";
+import { ImportClientsFromSpreadsheet } from "./clients/UseCases/ImportClients.js";
 import { EnqueueSync } from "./clients/UseCases/EnqueueSync.js";
 import { auth } from "./lib/auth.js";
 import { prisma } from "./lib/db.js";
@@ -50,6 +58,10 @@ const corsStaticOrigins = new Set([
   `http://127.0.0.1:${apiPort}`,
   ...trustedFrontendOrigins(),
 ]);
+
+await app.register(fastifyMultipart, {
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 
 await app.register(fastifyCors, {
   origin: (origin, cb) => {
@@ -100,6 +112,11 @@ await app.register(fastifyApiReference, {
 
 const clientDeps = {
   listClients: new ListClients(prisma),
+  getClient: new GetClient(prisma),
+  createClient: new CreateClient(prisma),
+  updateClient: new UpdateClient(prisma),
+  deleteClient: new DeleteClient(prisma),
+  importClientsFromSpreadsheet: new ImportClientsFromSpreadsheet(prisma),
 };
 
 const syncDeps = {

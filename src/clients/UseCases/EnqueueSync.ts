@@ -22,7 +22,8 @@ export class EnqueueSync {
     }
 
     const clients = await this.prisma.client.findMany({
-      select: { id: true, cnpj: true },
+      where: { documentType: "CNPJ" },
+      select: { id: true, document: true },
     });
 
     const batches = chunkArray(clients, 10);
@@ -35,7 +36,7 @@ export class EnqueueSync {
             Id: `${client.id}-${index}`,
             MessageBody: JSON.stringify({
               clientId: client.id,
-              cnpj: client.cnpj,
+              cnpj: client.document,
             }),
           })),
         }),

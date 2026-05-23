@@ -125,12 +125,19 @@ model Task {
   @@map("task")
 }
 
+enum DocumentType {
+  CNPJ
+  CPF
+}
+
 model Client {
-  id        String   @id @default(cuid())
-  name      String
-  cnpj      String   @unique
-  status    String   @default("PENDENTE")
-  updatedAt DateTime @updatedAt @db.Timestamptz()
+  id           String       @id @default(cuid())
+  name         String
+  email        String
+  document     String       @unique
+  documentType DocumentType
+  status       String       @default("PENDENTE")
+  updatedAt    DateTime     @updatedAt @db.Timestamptz()
 
   @@index([name])
   @@map("client")
