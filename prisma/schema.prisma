@@ -18,8 +18,6 @@ model User {
 
   accounts Account[]
   sessions Session[]
-  workDays WorkDay[]
-  tasks    Task[]
 
   @@map("user")
 }
@@ -82,48 +80,7 @@ model Verification {
   @@map("verification")
 }
 
-/// Dia de trabalho — agrupa tarefas por data (ex.: "dia 08").
-model WorkDay {
-  id        String   @id @default(cuid())
-  userId    String
-  date      DateTime @db.Date
-  label     String?
-  createdAt DateTime @default(now()) @db.Timestamptz()
-  updatedAt DateTime @updatedAt @db.Timestamptz()
 
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tasks Task[]
-
-  @@unique([userId, date])
-  @@index([userId, date(sort: Desc)])
-  @@map("work_day")
-}
-
-enum TaskStatus {
-  EM_DESENVOLVIMENTO
-  ENVIADO_STG
-  MR_ABERTA_PROD
-  CONCLUIDA
-}
-
-model Task {
-  id          String     @id @default(cuid())
-  userId      String
-  workDayId   String
-  title       String
-  description String?
-  status      TaskStatus @default(EM_DESENVOLVIMENTO)
-  sortOrder   Int        @default(0)
-  createdAt   DateTime   @default(now()) @db.Timestamptz()
-  updatedAt   DateTime   @updatedAt @db.Timestamptz()
-
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workDay WorkDay @relation(fields: [workDayId], references: [id], onDelete: Cascade)
-
-  @@index([workDayId, sortOrder])
-  @@index([userId])
-  @@map("task")
-}
 
 enum DocumentType {
   CNPJ
