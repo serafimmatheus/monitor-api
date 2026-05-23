@@ -63,6 +63,8 @@ export const ClientsSummaryResponseSchema = z.object({
   pendentes: z.number(),
   baixadas: z.number(),
   inaptos: z.number(),
+  suspensas: z.number(),
+  erros: z.number(),
   totalCnpj: z.number(),
   pendingCnpj: z.number(),
   hasPendingSync: z.boolean(),

@@ -105,19 +105,21 @@ export class GetClientsSummary {
     );
 
     const ativos = statusCounts.ATIVA ?? 0;
-    const pendentes =
-      (statusCounts.PENDENTE ?? 0) + (statusCounts.ERRO ?? 0);
+    const pendentes = statusCounts.PENDENTE ?? 0;
     const baixadas = statusCounts.BAIXADA ?? 0;
-    const inaptos =
-      (statusCounts.INAPTA ?? 0) + (statusCounts.SUSPENSA ?? 0);
+    const inaptos = statusCounts.INAPTA ?? 0;
+    const suspensas = statusCounts.SUSPENSA ?? 0;
+    const erros = statusCounts.ERRO ?? 0;
     const totalCnpj = counts.reduce((sum, entry) => sum + entry._count._all, 0);
-    const pendingCnpj = statusCounts.PENDENTE ?? 0;
+    const pendingCnpj = pendentes;
 
     return {
       ativos,
       pendentes,
       baixadas,
       inaptos,
+      suspensas,
+      erros,
       totalCnpj,
       pendingCnpj,
       hasPendingSync: pendingCnpj > 0,
