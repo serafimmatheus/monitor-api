@@ -3,6 +3,7 @@ import type {
   Prisma,
   PrismaClient,
 } from "../../generated/prisma/client.js";
+import { getApproximateQueueDepth } from "../../lib/queueDepth.js";
 import { normalizeDocument, parseDocument } from "../lib/document.js";
 import type { ClientDto } from "../schemas.js";
 
@@ -112,6 +113,7 @@ export class GetClientsSummary {
     const erros = statusCounts.ERRO ?? 0;
     const totalCnpj = counts.reduce((sum, entry) => sum + entry._count._all, 0);
     const pendingCnpj = pendentes;
+    const queueDepth = await getApproximateQueueDepth();
 
     return {
       ativos,
@@ -122,7 +124,7 @@ export class GetClientsSummary {
       erros,
       totalCnpj,
       pendingCnpj,
-      hasPendingSync: pendingCnpj > 0,
+      hasPendingSync: queueDepth > 0,
     };
   }
 }
